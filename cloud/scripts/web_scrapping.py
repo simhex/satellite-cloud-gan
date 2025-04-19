@@ -40,7 +40,34 @@ def download_images(
     Returns:
         None
     """
-    return NotImplementedError
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+
+    start_dt = datetime.strptime(start_date, "%Y-%m-%d")
+    end_dt = datetime.strptime(end_date, "%Y-%m-%d") + timedelta(days=1)  # inclusive
+
+    current = start_dt
+    while current < end_dt:
+        timestamp = current.strftime("%Y%m%d_%H%M")
+        url = f"https://www.nea.gov.sg/docs/default-source/satelliteimage/BlueMarbleASEAN_{timestamp}.jpg"
+        filename = f"satellite_img_asean_{timestamp}.jpg"
+        filepath = os.path.join(output_dir, filename)
+
+        if os.path.exists(filepath):
+            print(f"Already downloaded: {filename}")
+        else:
+            try:
+                response = requests.get(url, timeout=2)
+                if response.status_code == 200:
+                    with open(filepath, "wb") as f:
+                        f.write(response.content)
+                    print(f"Downloaded: {filename}")
+                else:
+                    print(f"Failed to download {filename} - Status code: {response.status_code}")
+            except requests.RequestException as e:
+                print(f"Error downloading {filename}: {e}")
+
+        current += timedelta(minutes=20)
 
 
 def main():
