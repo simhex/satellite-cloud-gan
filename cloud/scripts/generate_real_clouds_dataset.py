@@ -51,7 +51,17 @@ def process(
     Returns:
         None
     """
-    return NotImplementedError
+    for i, filename in tqdm(enumerate(filenames), total=len(filenames)):
+        # Load the image
+        img = load_image(filename, crop=crop)
+        if img is None:
+            continue  # skip failed loads
+        
+        # Split into patches
+        patches = patchify(img, patch_size)
+        
+        # Save the patches
+        save_patches(patches, output_dir, starting_index=i * len(patches))
 
 
 def main():

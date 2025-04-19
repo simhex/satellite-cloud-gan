@@ -12,7 +12,7 @@ def get_filenames(input_dir: str) -> List[str]:
     Returns:
         List[str]: List of image filenames.
     """
-    return NotImplementedError
+    return [os.path.join(input_dir, f) for f in os.listdir(input_dir) if f.endswith('.jpg')]
 
 
 def load_image(
@@ -28,7 +28,22 @@ def load_image(
     Returns:
         np.ndarray: Numpy array of the image.
     """
-    return NotImplementedError
+    try:
+        # Load image
+        img = Image.open(path).convert(convert)
+        
+        # Convert the image to a numpy array
+        img_array = np.array(img)
+        
+        # Crop the image if crop coordinates are provided
+        if crop:
+            left, upper, right, lower = crop
+            img_array = img_array[upper:lower, left:right]
+        
+        return img_array
+    except Exception as e:
+        print(f"Failed to load image {path}: {e}")
+        return None
 
 
 def patchify(
@@ -42,7 +57,16 @@ def patchify(
     Returns:
         List[np.ndarray]: A list of patches.
     """
-    return NotImplementedError
+    patches = []
+    height, width = img.shape[:2]
+    patch_height, patch_width = patch_size
+    
+    for y in range(0, height, patch_height):
+        for x in range(0, width, patch_width):
+            patch = img[y:y+patch_height, x:x+patch_width]
+            patches.append(patch)
+    
+    return patches
 
 
 def save_patches(
@@ -57,4 +81,7 @@ def save_patches(
     Returns:
         None
     """
-    return NotImplementedError
+    for i, patch in enumerate(patches):
+        patch_filename = os.path.join(output_dir, f"patch_{starting_index + i}.jpg")
+        patch_img = Image.fromarray(patch)
+        patch_img.save(patch_filename)
