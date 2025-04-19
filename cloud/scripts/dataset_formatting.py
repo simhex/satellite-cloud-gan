@@ -3,7 +3,6 @@ import os
 from pathlib import Path
 import argparse
 
-
 def build_argparser() -> argparse.ArgumentParser:
     """
     Build the argument parser for command line arguments.
@@ -39,9 +38,13 @@ def browse_folder(
         A: str, 
         B: str) -> Tuple[List[Path], List[Path]]:
     """
-    Browse a directory and return a list of all the png files in it and its subfolder.
+    Browse a directory and return a list of all the png/jpg files in it and its subfolder.
     """
-    return NotImplementedError
+    A_path = path / A
+    B_path = path / B
+    A_files = sorted([p for p in A_path.glob("**/*") if p.suffix in [".jpg", ".png"] and p.is_file()])
+    B_files = sorted([p for p in B_path.glob("**/*") if p.suffix in [".jpg", ".png"] and p.is_file()])
+    return A_files, B_files
 
 
 def check_existence(
@@ -53,7 +56,9 @@ def check_existence(
     Returns:
         None
     """
-    return NotImplementedError
+    for f in filenames:
+        if not f.exists():
+            raise FileNotFoundError(f"{f} does not exist")
 
 
 def create_folders(
@@ -67,7 +72,9 @@ def create_folders(
     Returns:
         None
     """
-    return NotImplementedError
+    for folder in folder_list:
+        path = input_dir / folder
+        path.mkdir(parents=True, exist_ok=True)
 
 
 def split_train_test(
@@ -81,7 +88,11 @@ def split_train_test(
     Returns:
         Tuple[List[Path], List[Path]]: Training and testing filenames.
     """
-    return NotImplementedError
+    total = len(filenames)
+    split_idx = int(total * alpha)
+    train = filenames[:split_idx]
+    test = filenames[split_idx:]
+    return train, test
 
 
 def create_symlinks(
@@ -97,7 +108,11 @@ def create_symlinks(
     Returns:
         None
     """
-    return NotImplementedError
+    for f in filenames:
+        dst = split_dir / f.name
+        if dst.exists() or dst.is_symlink():
+            dst.unlink()
+        os.symlink(f.resolve(), dst)
 
 
 def process(input_dir: str, A: str, B: str, folders: List[str], alpha: float) -> None:
@@ -112,7 +127,27 @@ def process(input_dir: str, A: str, B: str, folders: List[str], alpha: float) ->
     Returns:
         None
     """
-    return NotImplementedError
+    input_path = Path(input_dir)
+    datasets_dir = input_path / "pytorch-CycleGAN-and-pix2pix" / "datasets" / f"{A}2{B}"
+
+    A_files, B_files = browse_folder(input_path, A, B)
+    check_existence(A_files + B_files)
+
+    create_folders(datasets_dir, folders)
+
+    A_train, A_test = split_train_test(A_files, alpha)
+    B_train, B_test = split_train_test(B_files, alpha)
+
+    folder_map = {
+        folders[0]: A_train,
+        folders[1]: B_train,
+        folders[2]: A_test,
+        folders[3]: B_test
+    }
+
+    for folder, files in folder_map.items():
+        target_dir = datasets_dir / folder
+        create_symlinks(files, input_path, target_dir)
 
 
 def main():
