@@ -66,16 +66,6 @@ def generate_perlin_noise_2d(shape, res):
     return np.sqrt(2) * ((1 - t[:, :, 1]) * n0 + t[:, :, 1] * n1)
 
 
-def generate_fractal_noise_2d(shape, res, octaves=1, persistence=0.5):
-    noise = np.zeros(shape)
-    frequency = 1
-    amplitude = 1
-    for _ in range(octaves):
-        noise += amplitude * generate_perlin_noise_2d(shape, (int(frequency * res[0]), int(frequency * res[1])))
-        frequency *= 2
-        amplitude *= persistence
-    return noise
-
 def generate_synthetic_clouds(
         shape: Tuple[int, int],
         res: Tuple[int, int],
@@ -91,7 +81,14 @@ def generate_synthetic_clouds(
     Returns:
         A numpy array of shape shape with the generated noise.
     """
-    noise = generate_fractal_noise_2d(shape, res, octaves)
+    noise = np.zeros(shape)
+    frequency = 1
+    amplitude = 1
+    persistence = 0.5
+    for _ in range(octaves):
+        noise += amplitude * generate_perlin_noise_2d(shape, (int(frequency * res[0]), int(frequency * res[1])))
+        frequency *= 2
+        amplitude *= persistence
     return noise
 
 
